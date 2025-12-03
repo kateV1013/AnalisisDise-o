@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StudyFlow - Login</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>StudyFlow · Iniciar sesión</h1>
+    <span>Planificador de tareas y notas</span>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>Accede a tu cuenta</h2>
+      <p class="small">Usa el correo y la contraseña que registraste.</p>
+
+      <form id="formLogin">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="loginEmail">Correo electrónico</label>
+            <input type="email" id="loginEmail" required />
+          </div>
+          <div class="form-group">
+            <label for="loginPassword">Contraseña</label>
+            <input type="password" id="loginPassword" required />
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button type="submit">Entrar</button>
+          <a class="btn-link" href="registro.html">Crear nueva cuenta</a>
+        </div>
+        <div id="msgLogin" class="msg"></div>
+      </form>
+    </section>
+  </main>
+
+  <script>
+    document.getElementById("formLogin").addEventListener("submit", function (e) {
+      e.preventDefault();
+
+      const email = document.getElementById("loginEmail").value.trim();
+      const password = document.getElementById("loginPassword").value.trim();
+      const msg = document.getElementById("msgLogin");
+
+      const stored = localStorage.getItem("studyflowUser");
+      if (!stored) {
+        msg.textContent = "No hay ningún usuario registrado. Regístrate primero.";
+        msg.className = "msg msg-error";
+        return;
+      }
+
+      const user = JSON.parse(stored);
+
+      if (email === user.email && password === user.password) {
+        localStorage.setItem("studyflowLoggedIn", "true");
+        msg.textContent = "Ingreso correcto. Redirigiendo…";
+        msg.className = "msg msg-ok";
+        setTimeout(() => {
+          window.location.href = "studyflow.html";
+        }, 800);
+      } else {
+        msg.textContent = "Correo o contraseña incorrectos.";
+        msg.className = "msg msg-error";
+      }
+    });
+  </script>
+</body>
+</html>

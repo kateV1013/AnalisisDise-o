@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StudyFlow - Planificador</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>StudyFlow · Planificador de tareas</h1>
+    <span id="userInfo"></span>
+    <button class="btn-secondary" onclick="cerrarSesion()">Cerrar sesión</button>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>Panel principal</h2>
+      <p class="small">
+        Administra tus <strong>datos de estudiante</strong>, <strong>materias</strong>, <strong>tareas</strong>, <strong>notas</strong>,
+        <strong>rendimiento</strong> y revisa las <strong>alertas</strong> de tareas próximas a vencer.
+      </p>
+
+      <div class="nav-tabs">
+        <button data-section="secPerfil" class="active">Estudiante</button>
+        <button data-section="secMaterias">Materias</button>
+        <button data-section="secTareas">Tareas</button>
+        <button data-section="secNotas">Notas</button>
+        <button data-section="secRendimiento">Rendimiento</button>
+        <button data-section="secAlertas">Alertas</button>
+        <button data-section="secHorario">Horario</button>
+      </div>
+    </section>
+
+    <!-- PERFIL ESTUDIANTE -->
+    <section id="secPerfil" class="card section active">
+      <h2>Datos del estudiante</h2>
+      <form id="formPerfil">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="perfilNombre">Nombre</label>
+            <input type="text" id="perfilNombre" required />
+          </div>
+          <div class="form-group">
+            <label for="perfilApellido">Apellido</label>
+            <input type="text" id="perfilApellido" required />
+          </div>
+          <div class="form-group">
+            <label for="perfilEdad">Edad</label>
+            <input type="number" id="perfilEdad" min="5" max="100" required />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="perfilEmail">Correo</label>
+            <input type="email" id="perfilEmail" required />
+          </div>
+          <div class="form-group">
+            <label for="perfilPassword">Contraseña</label>
+            <input type="password" id="perfilPassword" required />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="perfilInstitucion">Institución</label>
+            <input type="text" id="perfilInstitucion" required />
+          </div>
+          <div class="form-group">
+            <label for="perfilTipoInstitucion">Tipo de institución</label>
+            <select id="perfilTipoInstitucion" required>
+              <option value="">Selecciona...</option>
+              <option value="colegio">Colegio</option>
+              <option value="universidad">Universidad</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="perfilColegio" class="form-row hidden">
+          <div class="form-group">
+            <label for="perfilGrado">Grado</label>
+            <input type="text" id="perfilGrado" />
+          </div>
+        </div>
+
+        <div id="perfilUni" class="form-row hidden">
+          <div class="form-group">
+            <label for="perfilCarrera">Carrera</label>
+            <input type="text" id="perfilCarrera" />
+          </div>
+          <div class="form-group">
+            <label for="perfilSemestre">Semestre</label>
+            <input type="number" id="perfilSemestre" min="1" max="20" />
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button type="submit">Guardar cambios</button>
+        </div>
+        <div id="msgPerfil" class="msg"></div>
+      </form>
+    </section>
+
+    <!-- MATERIAS -->
+    <section id="secMaterias" class="card section">
+      <h2>Materias</h2>
+      <form id="formMateria">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="nombreMateria">Nombre de la materia</label>
+            <input type="text" id="nombreMateria" placeholder="Ej. Matemáticas" required />
+          </div>
+        </div>
+        <button type="submit">Añadir materia</button>
+      </form>
+
+      <div id="listaMaterias"></div>
+    </section>
+
+    <!-- TAREAS -->
+    <section id="secTareas" class="card section">
+      <h2>Tareas</h2>
+      <form id="formTarea">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="tituloTarea">Descripción / nombre de la tarea</label>
+            <input type="text" id="tituloTarea" required placeholder="Ej. Taller de problemas 1" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="materiaTarea">Materia</label>
+            <select id="materiaTarea" required></select>
+          </div>
+          <div class="form-group">
+            <label for="fechaTarea">Fecha de entrega</label>
+            <input type="date" id="fechaTarea" required />
+          </div>
+          <div class="form-group">
+            <label for="horaTarea">Hora</label>
+            <input type="time" id="horaTarea" required />
+          </div>
+        </div>
+        <button type="submit">Registrar tarea</button>
+      </form>
+
+      <div id="listaTareas"></div>
+    </section>
+
+    <!-- NOTAS -->
+    <section id="secNotas" class="card section">
+      <h2>Notas</h2>
+      <form id="formNota">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="materiaNota">Materia</label>
+            <select id="materiaNota" required></select>
+          </div>
+          <div class="form-group">
+            <label for="valorNota">Nota (0 - 100)</label>
+            <input type="number" id="valorNota" min="0" max="100" step="0.1" required />
+          </div>
+        </div>
+        <button type="submit">Agregar nota</button>
+      </form>
+
+      <div id="tablaNotas"></div>
+      <div id="resumenPromedios" class="msg"></div>
+    </section>
+
+    <!-- RENDIMIENTO -->
+    <section id="secRendimiento" class="card section">
+      <h2>Rendimiento</h2>
+      <p class="small">
+        Registra un <strong>porcentaje de rendimiento</strong> y algunas
+        <strong>observaciones</strong> por materia.
+      </p>
+
+      <form id="formRendimiento">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="materiaRend">Materia</label>
+            <select id="materiaRend" required></select>
+          </div>
+          <div class="form-group">
+            <label for="porcentajeRend">Porcentaje (0 - 100)</label>
+            <input type="number" id="porcentajeRend" min="0" max="100" step="0.1" required />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="obsRend">Observaciones</label>
+            <textarea id="obsRend" placeholder="Ej. Buen desempeño, mejorar en exámenes parciales..."></textarea>
+          </div>
+        </div>
+        <button type="submit">Guardar rendimiento</button>
+      </form>
+
+      <div id="tablaRendimiento"></div>
+    </section>
+
+    <!-- ALERTAS -->
+    <section id="secAlertas" class="card section">
+      <h2>Alertas de tareas</h2>
+      <p class="small">
+        Se muestran tareas <strong>pendientes</strong> cuya fecha de entrega está
+        próxima (hoy o hasta dentro de 2 días).
+      </p>
+      <div id="listaAlertas"></div>
+    </section>
+
+    <!-- HORARIO -->
+    <section id="secHorario" class="card section">
+      <h2>Horario (vista por tareas)</h2>
+      <p class="small">Ordenado por fecha y hora de entrega.</p>
+      <div id="tablaHorario"></div>
+    </section>
+  </main>
+
+  <script>
+    // --- Protección de acceso ---
+    if (localStorage.getItem("studyflowLoggedIn") !== "true") {
+      window.location.href = "login.html";
+    }
+
+    // --- Datos en memoria ---
+    let materias = [];
+    let tareas = [];
+    let notas = [];
+    let rendimientos = [];
+    let userGlobal = null;
+
+    // --- Utilidades de localStorage ---
+    function cargarDatos() {
+      materias = JSON.parse(localStorage.getItem("studyflowMaterias") || "[]");
+      tareas = JSON.parse(localStorage.getItem("studyflowTareas") || "[]");
+      notas = JSON.parse(localStorage.getItem("studyflowNotas") || "[]");
+      rendimientos = JSON.parse(localStorage.getItem("studyflowRendimiento") || "[]");
+    }
+
+    function guardarDatos() {
+      localStorage.setItem("studyflowMaterias", JSON.stringify(materias));
+      localStorage.setItem("studyflowTareas", JSON.stringify(tareas));
+      localStorage.setItem("studyflowNotas", JSON.stringify(notas));
+      localStorage.setItem("studyflowRendimiento", JSON.stringify(rendimientos));
+    }
+
+    function cargarUsuario() {
+      const stored = localStorage.getItem("studyflowUser");
+      if (!stored) return;
+      userGlobal = JSON.parse(stored);
+    }
+
+    function guardarUsuario() {
+      if (!userGlobal) return;
+      localStorage.setItem("studyflowUser", JSON.stringify(userGlobal));
+    }
+
+    // --- Tabs ---
+    document.querySelectorAll(".nav-tabs button").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document
+          .querySelectorAll(".nav-tabs button")
+          .forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+
+        const sectionId = btn.getAttribute("data-section");
+        document
+          .querySelectorAll(".section")
+          .forEach((sec) => sec.classList.remove("active"));
+        document.getElementById(sectionId).classList.add("active");
+      });
+    });
+
+    function cerrarSesion() {
+      localStorage.removeItem("studyflowLoggedIn");
+      window.location.href = "login.html";
+    }
+
+    // --- Mostrar info de usuario en header ---
+    function mostrarInfoUsuario() {
+      const span = document.getElementById("userInfo");
+      if (!userGlobal) return;
+
+      let detalle = "";
+      if (userGlobal.tipoInstitucion === "colegio") {
+        detalle = `Colegio: ${userGlobal.institucion} · Grado ${userGlobal.grado}`;
+      } else if (userGlobal.tipoInstitucion === "universidad") {
+        detalle = `Universidad: ${userGlobal.institucion} · ${userGlobal.carrera}, ${userGlobal.semestre}° semestre`;
+      } else {
+        detalle = userGlobal.institucion || "";
+      }
+
+      span.textContent = `${userGlobal.nombre} ${userGlobal.apellido} (${userGlobal.email}) · ${detalle}`;
+    }
+
+    // --- PERFIL ESTUDIANTE ---
+    const perfilTipo = document.getElementById("perfilTipoInstitucion");
+    const perfilColegio = document.getElementById("perfilColegio");
+    const perfilUni = document.getElementById("perfilUni");
+
+    perfilTipo.addEventListener("change", () => {
+      const tipo = perfilTipo.value;
+      if (tipo === "colegio") {
+        perfilColegio.classList.remove("hidden");
+        perfilUni.classList.add("hidden");
+      } else if (tipo === "universidad") {
+        perfilUni.classList.remove("hidden");
+        perfilColegio.classList.add("hidden");
+      } else {
+        perfilColegio.classList.add("hidden");
+        perfilUni.classList.add("hidden");
+      }
+    });
+
+    function rellenarPerfil() {
+      if (!userGlobal) return;
+      document.getElementById("perfilNombre").value = userGlobal.nombre || "";
+      document.getElementById("perfilApellido").value = userGlobal.apellido || "";
+      document.getElementById("perfilEdad").value = userGlobal.edad || "";
+      document.getElementById("perfilEmail").value = userGlobal.email || "";
+      document.getElementById("perfilPassword").value = userGlobal.password || "";
+      document.getElementById("perfilInstitucion").value = userGlobal.institucion || "";
+      document.getElementById("perfilTipoInstitucion").value = userGlobal.tipoInstitucion || "";
+
+      if (userGlobal.tipoInstitucion === "colegio") {
+        perfilColegio.classList.remove("hidden");
+        perfilUni.classList.add("hidden");
+        document.getElementById("perfilGrado").value = userGlobal.grado || "";
+      } else if (userGlobal.tipoInstitucion === "universidad") {
+        perfilUni.classList.remove("hidden");
+        perfilColegio.classList.add("hidden");
+        document.getElementById("perfilCarrera").value = userGlobal.carrera || "";
+        document.getElementById("perfilSemestre").value = userGlobal.semestre || "";
+      }
+    }
+
+    document.getElementById("formPerfil").addEventListener("submit", function (e) {
+      e.preventDefault();
+      if (!userGlobal) userGlobal = {};
+
+      userGlobal.nombre = document.getElementById("perfilNombre").value.trim();
+      userGlobal.apellido = document.getElementById("perfilApellido").value.trim();
+      userGlobal.edad = document.getElementById("perfilEdad").value.trim();
+      userGlobal.email = document.getElementById("perfilEmail").value.trim();
+      userGlobal.password = document.getElementById("perfilPassword").value.trim();
+      userGlobal.institucion = document.getElementById("perfilInstitucion").value.trim();
+      userGlobal.tipoInstitucion = document.getElementById("perfilTipoInstitucion").value;
+
+      userGlobal.grado = "";
+      userGlobal.carrera = "";
+      userGlobal.semestre = "";
+
+      if (userGlobal.tipoInstitucion === "colegio") {
+        userGlobal.grado = document.getElementById("perfilGrado").value.trim();
+      } else if (userGlobal.tipoInstitucion === "universidad") {
+        userGlobal.carrera = document.getElementById("perfilCarrera").value.trim();
+        userGlobal.semestre = document.getElementById("perfilSemestre").value.trim();
+      }
+
+      guardarUsuario();
+      mostrarInfoUsuario();
+
+      const msg = document.getElementById("msgPerfil");
+      msg.textContent = "Datos del estudiante actualizados.";
+      msg.className = "msg msg-ok";
+    });
+
+    // --- Materias ---
+    function actualizarSelectsMaterias() {
+      const selTarea = document.getElementById("materiaTarea");
+      const selNota = document.getElementById("materiaNota");
+      const selRend = document.getElementById("materiaRend");
+
+      selTarea.innerHTML = "";
+      selNota.innerHTML = "";
+      selRend.innerHTML = "";
+
+      materias.forEach((m) => {
+        const o1 = document.createElement("option");
+        o1.value = m;
+        o1.textContent = m;
+        selTarea.appendChild(o1);
+
+        const o2 = document.createElement("option");
+        o2.value = m;
+        o2.textContent = m;
+        selNota.appendChild(o2);
+
+        const o3 = document.createElement("option");
+        o3.value = m;
+        o3.textContent = m;
+        selRend.appendChild(o3);
+      });
+    }
+
+    function renderMaterias() {
+      const cont = document.getElementById("listaMaterias");
+      if (!materias.length) {
+        cont.innerHTML = '<p class="small">Aún no has registrado materias.</p>';
+        actualizarSelectsMaterias();
+        return;
+      }
+      let html = "<ul>";
+      materias.forEach((m, i) => {
+        html += `<li>${i + 1}. ${m}</li>`;
+      });
+      html += "</ul>";
+      cont.innerHTML = html;
+
+      actualizarSelectsMaterias();
+    }
+
+    document.getElementById("formMateria").addEventListener("submit", function (e) {
+      e.preventDefault();
+      const nombre = document.getElementById("nombreMateria").value.trim();
+      if (!nombre) return;
+      materias.push(nombre);
+      document.getElementById("nombreMateria").value = "";
+      guardarDatos();
+      renderMaterias();
+    });
+
+    // --- Tareas ---
+    function renderTareas() {
+      const cont = document.getElementById("listaTareas");
+      if (!tareas.length) {
+        cont.innerHTML = '<p class="small">No hay tareas registradas.</p>';
+        return;
+      }
+      let html =
+        "<table><thead><tr><th>Materia</th><th>Tarea</th><th>Fecha</th><th>Hora</th><th>Estado</th></tr></thead><tbody>";
+      tareas.forEach((t) => {
+        let badgeClass = "badge-pendiente";
+        let badgeText = "Pendiente";
+
+        const ahora = new Date();
+        const fechaHora = new Date(t.fecha + "T" + t.hora);
+
+        if (fechaHora < ahora) {
+          badgeClass = "badge-vencida";
+          badgeText = "Vencida";
+        }
+
+        html += `<tr>
+          <td>${t.materia}</td>
+          <td>${t.titulo}</td>
+          <td>${t.fecha}</td>
+          <td>${t.hora}</td>
+          <td><span class="badge ${badgeClass}">${badgeText}</span></td>
+        </tr>`;
+      });
+      html += "</tbody></table>";
+      cont.innerHTML = html;
+    }
+
+    document.getElementById("formTarea").addEventListener("submit", function (e) {
+      e.preventDefault();
+      const titulo = document.getElementById("tituloTarea").value.trim();
+      const materia = document.getElementById("materiaTarea").value;
+      const fecha = document.getElementById("fechaTarea").value;
+      const hora = document.getElementById("horaTarea").value;
+
+      if (!titulo || !materia || !fecha || !hora) return;
+
+      tareas.push({ titulo, materia, fecha, hora, estado: "pendiente" });
+      guardarDatos();
+      renderTareas();
+      actualizarAlertas();
+      actualizarHorario();
+
+      document.getElementById("formTarea").reset();
+    });
+
+    // --- Notas ---
+    function renderNotas() {
+      const cont = document.getElementById("tablaNotas");
+      if (!notas.length) {
+        cont.innerHTML = '<p class="small">Todavía no hay notas registradas.</p>';
+        document.getElementById("resumenPromedios").textContent = "";
+        return;
+      }
+
+      let html =
+        "<table><thead><tr><th>Materia</th><th>Nota</th></tr></thead><tbody>";
+      notas.forEach((n) => {
+        html += `<tr><td>${n.materia}</td><td>${n.valor.toFixed(1)}</td></tr>`;
+      });
+      html += "</tbody></table>";
+      cont.innerHTML = html;
+
+      // Promedios por materia y general
+      const porMateria = {};
+      notas.forEach((n) => {
+        if (!porMateria[n.materia]) porMateria[n.materia] = [];
+        porMateria[n.materia].push(n.valor);
+      });
+
+      let texto = "Promedios por materia: ";
+      let sumaTotal = 0;
+      let cantidadTotal = 0;
+
+      const materiasProm = Object.keys(porMateria);
+      materiasProm.forEach((m, idx) => {
+        const arr = porMateria[m];
+        const prom = arr.reduce((acc, v) => acc + v, 0) / (arr.length || 1);
+        sumaTotal += arr.reduce((acc, v) => acc + v, 0);
+        cantidadTotal += arr.length;
+        texto += `${m}: ${prom.toFixed(1)}`;
+        if (idx < materiasProm.length - 1) texto += " · ";
+      });
+
+      if (cantidadTotal > 0) {
+        const promGeneral = sumaTotal / cantidadTotal;
+        texto += ` | Promedio general: ${promGeneral.toFixed(1)}`;
+      }
+
+      const resumen = document.getElementById("resumenPromedios");
+      resumen.textContent = texto;
+      resumen.className = "msg msg-ok";
+    }
+
+    document.getElementById("formNota").addEventListener("submit", function (e) {
+      e.preventDefault();
+      const materia = document.getElementById("materiaNota").value;
+      const valor = parseFloat(document.getElementById("valorNota").value);
+      if (isNaN(valor)) return;
+
+      notas.push({ materia, valor });
+      guardarDatos();
+      renderNotas();
+      document.getElementById("formNota").reset();
+    });
+
+    // --- RENDIMIENTO ---
+    function renderRendimiento() {
+      const cont = document.getElementById("tablaRendimiento");
+      if (!rendimientos.length) {
+        cont.innerHTML =
+          '<p class="small">Aún no has registrado observaciones de rendimiento.</p>';
+        return;
+      }
+
+      let html =
+        "<table><thead><tr><th>Materia</th><th>Porcentaje</th><th>Clasificación</th><th>Observaciones</th></tr></thead><tbody>";
+      rendimientos.forEach((r) => {
+        let clas = "Regular";
+        if (r.porcentaje >= 85) clas = "Excelente";
+        else if (r.porcentaje >= 70) clas = "Bueno";
+        else if (r.porcentaje >= 50) clas = "En riesgo";
+        else clas = "Crítico";
+
+        html += `<tr>
+          <td>${r.materia}</td>
+          <td>${r.porcentaje.toFixed(1)}%</td>
+          <td>${clas}</td>
+          <td>${r.obs || ""}</td>
+        </tr>`;
+      });
+      html += "</tbody></table>";
+      cont.innerHTML = html;
+    }
+
+    document
+      .getElementById("formRendimiento")
+      .addEventListener("submit", function (e) {
+        e.preventDefault();
+        const materia = document.getElementById("materiaRend").value;
+        const porcentaje = parseFloat(
+          document.getElementById("porcentajeRend").value
+        );
+        const obs = document.getElementById("obsRend").value.trim();
+
+        if (isNaN(porcentaje)) return;
+
+        rendimientos.push({ materia, porcentaje, obs });
+        guardarDatos();
+        renderRendimiento();
+        document.getElementById("formRendimiento").reset();
+      });
+
+    // --- Alertas ---
+    function actualizarAlertas() {
+      const cont = document.getElementById("listaAlertas");
+      const ahora = new Date();
+      const dosDias = 2 * 24 * 60 * 60 * 1000;
+
+      const proximas = tareas.filter((t) => {
+        const fechaHora = new Date(t.fecha + "T" + t.hora);
+        const diff = fechaHora - ahora;
+        return diff > 0 && diff <= dosDias; // entre ahora y 2 días
+      });
+
+      if (!proximas.length) {
+        cont.innerHTML =
+          '<p class="small">No hay tareas próximas a vencer.</p>';
+        return;
+      }
+
+      let html = "";
+      proximas.forEach((t) => {
+        html += `<div class="alert-card msg">
+          <strong>¡Atención!</strong> La tarea <strong>${t.titulo}</strong> de <strong>${t.materia}</strong>
+          vence el <strong>${t.fecha}</strong> a las <strong>${t.hora}</strong>.
+        </div><br>`;
+      });
+      cont.innerHTML = html;
+    }
+
+    // --- Horario (tabla ordenada) ---
+    function actualizarHorario() {
+      const cont = document.getElementById("tablaHorario");
+      if (!tareas.length) {
+        cont.innerHTML =
+          '<p class="small">Aún no hay tareas para mostrar en el horario.</p>';
+        return;
+      }
+
+      const copia = [...tareas];
+      copia.sort((a, b) => {
+        const da = new Date(a.fecha + "T" + a.hora);
+        const db = new Date(b.fecha + "T" + b.hora);
+        return da - db;
+      });
+
+      let html =
+        "<table><thead><tr><th>Fecha</th><th>Hora</th><th>Materia</th><th>Tarea</th></tr></thead><tbody>";
+      copia.forEach((t) => {
+        html += `<tr>
+          <td>${t.fecha}</td>
+          <td>${t.hora}</td>
+          <td>${t.materia}</td>
+          <td>${t.titulo}</td>
+        </tr>`;
+      });
+      html += "</tbody></table>";
+      cont.innerHTML = html;
+    }
+
+    // --- Inicio ---
+    window.addEventListener("DOMContentLoaded", () => {
+      cargarUsuario();
+      mostrarInfoUsuario();
+      rellenarPerfil();
+
+      cargarDatos();
+      renderMaterias();
+      renderTareas();
+      renderNotas();
+      renderRendimiento();
+      actualizarAlertas();
+      actualizarHorario();
+    });
+  </script>
+</body>
+</html>

@@ -6,26 +6,6 @@
     <title>StudyFlow - Todo en uno</title>
     <link rel="stylesheet" href="style.css" />
     <!-- Consolidated single-file UI + client-side logic for all forms -->
-
-    <!-- Dark theme styles (minimal) -->
-    <style>
-    .theme-dark {
-      background: #0f1115 !important;
-      color: #e6eef8 !important;
-    }
-    .theme-dark header, .theme-dark .card {
-      background: #131416 !important;
-      color: #e6eef8 !important;
-    }
-    .theme-dark input, .theme-dark select, .theme-dark textarea {
-      background: #0d1114 !important;
-      color: #e6eef8 !important;
-      border-color: #2a2f36 !important;
-    }
-    .theme-dark table th { background: #0d1013 !important; }
-    .theme-dark .btn-secondary { background: #1f2933 !important; color: #cfe3ff !important; }
-    .theme-dark .btn { background: #2450aa !important; }
-    </style>
 </head>
 <body>
     <header class="card" role="banner" aria-label="Cabecera StudyFlow">
@@ -44,14 +24,13 @@
         <!-- Navegación principal -->
         <section class="card" aria-label="Navegación principal">
             <div class="nav-tabs" role="tablist" aria-label="Secciones principales">
-                <button data-section="secDashboard" class="active">Dashboard</button>
+                <button data-section="secSeguridad" class="active">Inicio de sesión</button>
+                <button data-section="secDashboard">Dashboard</button>
                 <button data-section="secTareas">Tareas</button>
                 <button data-section="secNotificaciones">Notificaciones</button>
                 <button data-section="secAsistencia">Asistencia</button>
                 <button data-section="secEvaluacion">Evaluación</button>
                 <button data-section="secEstadisticas">Estadísticas</button>
-                <button data-section="secPersonalizacion">Personalización</button>
-                <button data-section="secSeguridad">Seguridad</button>
             </div>
             <p class="small">Use las pestañas para navegar entre módulos. Los formularios guardan en localStorage (demo).</p>
         </section>
@@ -59,7 +38,7 @@
         <!-- (Omitted for brevity: all section markup unchanged) -->
         <!-- Full markup preserved from prior version... (file continued below) -->
         <!-- DASHBOARD -->
-        <section id="secDashboard" class="card section active" aria-labelledby="dash-h">
+        <section id="secDashboard" class="card section" aria-labelledby="dash-h">
             <h2 id="dash-h">Dashboard de Progreso</h2>
             <p class="small">Resumen visual y accesos directos.</p>
 
@@ -84,7 +63,7 @@
                 <form id="formTareaCompact" class="card" aria-label="Formulario registrar tarea">
                     <div class="form-row">
                         <div class="form-group"><label for="tituloTareaMain">Título</label><input id="tituloTareaMain" placeholder="Ej. Resolver ejercicios 4" /></div>
-                        <div class="form-group"><label for="materiaTareaMain">Materia</label><select id="materiaTareaMain"></select></div>
+                        <div class="form-group"><label for="materiaTareaMain">Materia</label><input id="materiaTareaMain" placeholder="Ej. Matemáticas" /></div>
                     </div>
 
                     <div class="form-row">
@@ -205,36 +184,8 @@
             </article>
         </section>
 
-        <!-- PERSONALIZACIÓN -->
-        <section id="secPersonalizacion" class="card section" aria-labelledby="per-h">
-            <h2 id="per-h">Personalización</h2>
-
-            <article class="card" aria-label="Interfaz">
-                <h3>Configuración de interfaz</h3>
-                <form id="formUI" class="card">
-                    <div class="form-row">
-                        <div class="form-group"><label for="themeSelect">Tema</label><select id="themeSelect"><option>Claro</option><option>Oscuro</option></select></div>
-                    </div>
-                    <div class="btn-row"><button type="button" id="btnGuardarUI" class="btn">Guardar preferencias</button></div>
-                    <div id="msgUI" class="msg small"></div>
-                </form>
-            </article>
-
-            <article class="card" aria-label="Idioma y zona">
-                <h3>Idioma y zona horaria</h3>
-                <form id="formLocale" class="card">
-                    <div class="form-row">
-                        <div class="form-group"><label for="languageSelect">Idioma</label><select id="languageSelect"><option selected>Español</option><option>Inglés</option></select></div>
-                        <div class="form-group"><label for="timezoneSelect">Zona horaria</label><select id="timezoneSelect"><option>UTC-5</option><option selected>UTC-6</option></select></div>
-                    </div>
-                    <div class="btn-row"><button type="button" id="btnGuardarLocale" class="btn">Guardar</button></div>
-                    <div id="msgLocale" class="msg small"></div>
-                </form>
-            </article>
-        </section>
-
         <!-- SEGURIDAD Y SESIÓN -->
-        <section id="secSeguridad" class="card section" aria-labelledby="secSeguridad-h">
+        <section id="secSeguridad" class="card section active" aria-labelledby="secSeguridad-h">
             <h2 id="secSeguridad-h">Seguridad y Sesión</h2>
             <p class="small">Acceso, registro y recuperación de contraseña.</p>
 
@@ -370,10 +321,9 @@
 
         function populateMateriaSelects() {
             const arr = getMaterias();
-            ['materiaTareaMain', 'tareaManual'].forEach(id => {
-                const el = document.getElementById(id); if (!el) return; el.innerHTML = '';
-                arr.forEach(m => { const o = document.createElement('option'); o.value = m; o.textContent = m; el.appendChild(o); });
-            });
+            // materiaTareaMain is now a free-text input; only populate select-based elements
+            const tareaManual = document.getElementById('tareaManual');
+            if (tareaManual) { tareaManual.innerHTML = ''; arr.forEach(m => { const o = document.createElement('option'); o.value = m; o.textContent = m; tareaManual.appendChild(o); }); }
             const selNota = document.getElementById('materiaNota');
             if (selNota) { selNota.innerHTML = ''; arr.forEach(m => { const o = document.createElement('option'); o.value = m; o.textContent = m; selNota.appendChild(o); }); }
             refreshSubParent();
@@ -621,22 +571,14 @@
         // ---- UI / personalization ----
         function loadUISettings() {
             const s = storage.loadObject('settings') || {};
-            const themeEl = document.getElementById('themeSelect');
-            if (themeEl) themeEl.value = s.theme || 'Claro';
             const langEl = document.getElementById('languageSelect'); if (langEl) langEl.value = s.language || 'Español';
             const tzEl = document.getElementById('timezoneSelect'); if (tzEl) tzEl.value = s.timezone || 'UTC-6';
-            // apply dark theme class on body
-            if (s.theme === 'Oscuro') document.body.classList.add('theme-dark'); else document.body.classList.remove('theme-dark');
         }
         function guardarUI() {
-            const themeEl = document.getElementById('themeSelect');
-            const theme = themeEl ? themeEl.value : 'Claro';
             const settings = storage.loadObject('settings') || {};
             settings.theme = theme;
             storage.saveObject('settings', settings);
             showTopMsg('Preferencias guardadas.', 'ok', 'msgUI');
-            // apply immediately
-            if (theme === 'Oscuro') document.body.classList.add('theme-dark'); else document.body.classList.remove('theme-dark');
         }
 
         // ---- Events wiring ----
@@ -672,10 +614,8 @@
 
             maybeAddListener('btnExport', () => { const fmtEl = document.getElementById('exportFormat'); const fmt = fmtEl ? fmtEl.value : 'CSV'; exportData(fmt); });
             maybeAddListener('btnEnviarAuto', enviarAutoevaluacion);
-            maybeAddListener('btnGuardarUI', guardarUI);
-            maybeAddListener('btnGuardarLocale', guardarLocale);
-            maybeAddListener('btnRegistroInternal', registroInternal);
-            maybeAddListener('btnLoginIn', loginInternal);
+            /* maybeAddListener('btnGuardarUI', guardarUI);
+            maybeAddListener('btnGuardarLocale', guardarLocale); */
             maybeAddListener('btnRecuperar', () => { const msgEl = document.getElementById('msgRecuperar'); if (msgEl) { msgEl.textContent = 'Simulación: se ha enviado un enlace (demo).'; msgEl.className = 'msg msg-ok'; } });
 
             const formT = document.getElementById('formTareaCompact'); if (formT) formT.addEventListener('reset', () => { delete document.getElementById('formTareaCompact').dataset.editing; const mt = document.getElementById('msgTarea'); if (mt) mt.textContent = ''; });
@@ -746,7 +686,6 @@
  // try to seed users from accounts.json if local storage empty
  await seedAccountsFromFile();
  wireEvents();
- loadUISettings();
  populateMateriaSelects();
 
  const logged = isAuthenticated();
@@ -754,9 +693,21 @@
  const userInfoSpan = document.getElementById('userInfo');
 
  if (!logged) {
- mostrarAuth('login');
+ // Ensure auth UI visible (explicit, avoids timing issues)
+ const loginArt = document.getElementById('auth-login');
+ const regArt = document.getElementById('auth-registro');
+ const recArt = document.getElementById('auth-recuperar');
+ if (loginArt) loginArt.classList.remove('hidden');
+ if (regArt) regArt.classList.add('hidden');
+ if (recArt) recArt.classList.add('hidden');
+ // set nav active to login
+ document.querySelectorAll('.nav-tabs button').forEach(b => b.classList.remove('active'));
+ const loginBtn = document.querySelector('.nav-tabs button[data-section="secSeguridad"]'); if (loginBtn) loginBtn.classList.add('active');
+ // show security section
+ document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+ const secLogin = document.getElementById('secSeguridad'); if (secLogin) secLogin.classList.add('active');
  userInfoSpan.textContent = '';
- document.getElementById('btnLogout').style.display = 'none';
+ const btnLogoutEl = document.getElementById('btnLogout'); if (btnLogoutEl) btnLogoutEl.style.display = 'none';
  } else {
  document.querySelectorAll('.nav-tabs button').forEach(b => b.classList.remove('active'));
  const btn = document.querySelector('.nav-tabs button[data-section="secDashboard"]');
@@ -819,9 +770,29 @@
  const rr = document.getElementById('btnRegistroInternal'); if (rr) rr.addEventListener('click', registroInternal);
  // expose functions to global scope
  window.loginInternal = loginInternal; window.registroInternal = registroInternal;
- // theme immediate apply when changed
- const themeSel = document.getElementById('themeSelect'); if (themeSel) themeSel.addEventListener('change', () => { const v = themeSel.value; if (v === 'Oscuro') document.body.classList.add('theme-dark'); else document.body.classList.remove('theme-dark'); });
 });
+
+ // ---- Auth UI helper ----
+ function mostrarAuth(tipo) {
+ const login = document.getElementById('auth-login');
+ const reg = document.getElementById('auth-registro');
+ const rec = document.getElementById('auth-recuperar');
+ if (login) login.classList.add('hidden');
+ if (reg) reg.classList.add('hidden');
+ if (rec) rec.classList.add('hidden');
+ if (tipo === 'registro' && reg) reg.classList.remove('hidden');
+ else if (tipo === 'recuperar' && rec) rec.classList.remove('hidden');
+ else if (login) login.classList.remove('hidden');
+
+ // update nav active state
+ document.querySelectorAll('.nav-tabs button').forEach(b => b.classList.remove('active'));
+ const btn = document.querySelector('.nav-tabs button[data-section="secSeguridad"]');
+ if (btn) btn.classList.add('active');
+ // show security section
+ document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+ const sec = document.getElementById('secSeguridad');
+ if (sec) sec.classList.add('active');
+ }
     </script>
 </body>
 </html>

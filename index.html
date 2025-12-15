@@ -368,16 +368,19 @@
  attachTareaRowHandlers();
  refreshSubParent();
  updateDashboardCounts();
+ // update asistencia panel after rendering tareas (non-intrusive)
+ try { if (typeof actualizarAsistencia === 'function') actualizarAsistencia(); } catch (e) { console.error('actualizarAsistencia error', e); }
  }
 
  function attachTareaRowHandlers() {
  document.querySelectorAll('#listaTareasFull [data-action]').forEach(a => {
  a.addEventListener('click', (ev) => {
  ev.preventDefault();
- if (!isAuthenticated()) { mostrarAuth('login'); showTopMsg('Inicia sesión para administrar tareas.', 'error'); return; }
  const tr = a.closest('tr');
  const id = tr.getAttribute('data-id');
  const action = a.getAttribute('data-action');
+ // allow toggle action even when unauthenticated so users can mark tasks locally
+ if (action !== 'toggle' && !isAuthenticated()) { mostrarAuth('login'); showTopMsg('Inicia sesión para administrar tareas.', 'error'); return; }
  if (action === 'delete') {
  if (!confirm('Eliminar tarea?')) return;
  const arr = getTareas().filter(t => t.id !== id);
@@ -401,6 +404,12 @@
  const t = arr.find(x => x.id === id);
  if (!t) return;
  t.estado = (t.estado === 'completada') ? 'pendiente' : 'completada';
+ // set or clear completion timestamp
+ if (t.estado === 'completada') {
+ t.completedAt = new Date().toISOString();
+ } else {
+ delete t.completedAt;
+ }
  saveTareas(arr);
  renderTareas();
  }
@@ -751,6 +760,8 @@
  renderRendimiento();
  actualizarHorario();
  updateDashboardCounts();
+ // update asistencia at startup if available
+ try { if (typeof actualizarAsistencia === 'function') actualizarAsistencia(); } catch (e) { console.error('actualizarAsistencia error', e); }
  }
 
  function updateDashboardCounts() {
@@ -882,6 +893,63 @@
  function renderAnalisis() { renderAutoevaluaciones(); }
  function renderRendimiento() { /* keep for compatibility: dashboard updated in updateDashboardCounts */ }
 
+ // ---- Asistencia (minimal, non-invasive) ----
+ function actualizarAsistencia() {
+ const contRec = document.getElementById('recomendaciones');
+ const contProd = document.getElementById('panelProductividad');
+ if (!contRec || !contProd) return;
+ // gather completed tasks that have a completion timestamp
+ const tareas = getTareas();
+ const now = new Date();
+ const sevenDaysAgo = new Date(now.getTime() -7 *24 *60 *60 *1000);
+ const valid = tareas
+ .filter(t => t && t.estado === 'completada' && t.completedAt)
+ .map(t => Object.assign({}, t, { completedDate: new Date(t.completedAt) }))
+ .filter(t => t.completedDate && t.completedDate >= sevenDaysAgo && t.completedDate <= now);
+
+ // requirement3: clear message if none
+ if (!valid.length) {
+ contRec.innerHTML = '<p class="small">No se han registrado tareas completadas en los últimos 7 días.</p>';
+ contProd.innerHTML = '';
+ return;
+ }
+
+ // map priority to weight
+ function weightFor(p) {
+ if (!p) return 2; // default media
+ const s = String(p).toLowerCase();
+ if (s.includes('alta')) return 3;
+ if (s.includes('baja')) return 1;
+ return 2;
+ }
+
+ const weights = new Array(24).fill(0);
+ const counts = new Array(24).fill(0);
+ valid.forEach(t => {
+ const h = t.completedDate.getHours();
+ const w = weightFor(t.prioridad);
+ weights[h] += w;
+ counts[h] +=1;
+ });
+
+ // find hour with max weight
+ let bestHour =0;
+ let bestWeight = weights[0] ||0;
+ for (let i =1; i <24; i++) {
+ if (weights[i] > bestWeight) { bestWeight = weights[i]; bestHour = i; }
+ }
+
+ // render results
+ contRec.innerHTML = `<p class="small">Tareas completadas en los últimos 7 días: <strong>${valid.length}</strong></p>`;
+ contRec.innerHTML += `<p class="small"><strong>Hora más productiva:</strong> ${String(bestHour).padStart(2,'0')}:00 — puntuación ${bestWeight}</p>`;
+ let html = '<table class="small"><thead><tr><th>Hora</th><th>Peso total</th><th># tareas</th></tr></thead><tbody>';
+ for (let h =0; h <24; h++) {
+ if (weights[h] ===0 && counts[h] ===0) continue;
+ html += `<tr><td>${String(h).padStart(2,'0')}:00</td><td>${weights[h]}</td><td>${counts[h]}</td></tr>`;
+ }
+ html += '</tbody></table>';
+ contProd.innerHTML = html;
+ }
  </script>
 </body>
 </html>

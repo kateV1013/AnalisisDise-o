@@ -180,7 +180,6 @@
  <form id="formExport" class="card" aria-label="Exportar datos">
  <div class="form-row">
  <div class="form-group"><label for="exportFormat">Formato</label><select id="exportFormat"><option>CSV</option><option>Excel</option><option>JSON</option></select></div>
- <div class="form-group"><label for="exportRange">Rango</label><select id="exportRange"><option>Última semana</option><option>Último mes</option><option>Todo</option></select></div>
  </div>
  <div class="btn-row"><button type="button" id="btnExport" class="btn">Generar exportación</button></div>
  </form>
@@ -950,6 +949,91 @@
  html += '</tbody></table>';
  contProd.innerHTML = html;
  }
- </script>
+ // ---- Export helper for Estadísticas (autoevaluaciones últimos7 días + Asistencia) ----
+function exportData(fmt) {
+ const f = (fmt || 'CSV').toUpperCase();
+ const now = new Date();
+ const sevenDaysAgo = new Date(now.getTime() -7 *24 *60 *60 *1000);
+ // autoevaluaciones últimos7 días
+ const autos = getAutoevaluaciones().filter(a => a && a.at && new Date(a.at) >= sevenDaysAgo && new Date(a.at) <= now);
+ // asistencia (tareas completadas últimos7 días)
+ const tareas = getTareas()
+ .filter(t => t && t.estado === 'completada' && t.completedAt)
+ .map(t => Object.assign({}, t, { completedDate: new Date(t.completedAt) }))
+ .filter(t => t.completedDate && t.completedDate >= sevenDaysAgo && t.completedDate <= now);
+ // compute weights/counts
+ const weights = new Array(24).fill(0);
+ const counts = new Array(24).fill(0);
+ tareas.forEach(t => {
+ const h = t.completedDate.getHours();
+ const p = t.prioridad || '';
+ const lp = String(p).toLowerCase();
+ const w = lp.includes('alta') ?3 : (lp.includes('baja') ?1 :2);
+ weights[h] += w;
+ counts[h] +=1;
+ });
+ let bestHour = -1, bestWeight =0;
+ for (let i =0; i <24; i++) { if (weights[i] > bestWeight) { bestWeight = weights[i]; bestHour = i; } }
+
+ // Prepare structured data for JSON or CSV detail
+ const asistenciaSummary = {
+ periodStart: sevenDaysAgo.toISOString(),
+ periodEnd: now.toISOString(),
+ totalCompleted: tareas.length,
+ bestHour: bestHour >=0 ? `${String(bestHour).padStart(2,'0')}:00` : null,
+ bestWeight,
+ hours: Array.from({ length:24 }).map((_, h) => ({ hour: `${String(h).padStart(2,'0')}:00`, weight: weights[h], count: counts[h] })).filter(x => x.weight >0 || x.count >0),
+ tasks: tareas.map(t => ({ id: t.id, titulo: t.titulo, materia: t.materia, prioridad: t.prioridad, completedAt: t.completedDate.toISOString() }))
+ };
+
+ if (f === 'JSON') {
+ const out = { autoevaluaciones: autos, asistencia: asistenciaSummary };
+ const blob = new Blob([JSON.stringify(out, null,2)], { type: 'application/json;charset=utf-8;' });
+ const url = URL.createObjectURL(blob);
+ const a = document.createElement('a'); a.href = url; a.download = `studyflow_export_${(new Date()).toISOString().slice(0,10)}.json`; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+ showTopMsg('Exportación JSON generada.', 'ok');
+ return;
+ }
+
+ // build CSV content for CSV and Excel
+ let csv = 'StudyFlow - Exportación (Autoevaluaciones + Asistencia)\n';
+ csv += `Período:,${sevenDaysAgo.toISOString()} to ${now.toISOString()}\n\n`;
+ // Autoevaluaciones
+ csv += 'Autoevaluaciones (últimos7 días)\n';
+ csv += 'id,fecha,tema,puntuación,comentarios\n';
+ autos.forEach(a => {
+ const line = `"${a.id}","${new Date(a.at).toISOString()}","${(a.tema||'').replace(/"/g,'""')}","${a.punt}","${(a.comentarios||'').replace(/"/g,'""')}"`;
+ csv += line + '\n';
+ });
+ csv += '\n';
+ // Asistencia summary
+ csv += 'Asistencia - resumen (tareas completadas últimos7 días)\n';
+ csv += `Total completadas:,${tareas.length}\n`;
+ if (bestHour >=0) csv += `Hora más productiva:,${String(bestHour).padStart(2,'0')}:00, Puntuación:,${bestWeight}\n`;
+ csv += '\nHora,Peso total,# tareas\n';
+ for (let h =0; h <24; h++) {
+ if (weights[h] ===0 && counts[h] ===0) continue;
+ csv += `${String(h).padStart(2,'0')}:00,${weights[h]},${counts[h]}\n`;
+ }
+ csv += '\nDetalle tareas completadas:\n';
+ csv += 'id,titulo,materia,prioridad,completedAt\n';
+ tareas.forEach(t => {
+ const line = `"${t.id}","${(t.titulo||'').replace(/"/g,'""')}","${(t.materia||'').replace(/"/g,'""')}","${t.prioridad}","${t.completedDate.toISOString()}"`;
+ csv += line + '\n';
+ });
+
+ // choose extension
+ const ext = (f === 'EXCEL') ? 'xls' : 'csv';
+ const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+ const url = URL.createObjectURL(blob);
+ const a = document.createElement('a'); a.href = url; a.download = `studyflow_export_${(new Date()).toISOString().slice(0,10)}.${ext}`;
+ document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+ showTopMsg(`Exportación ${ext.toUpperCase()} generada.`, 'ok');
+}
+
+// expose
+window.exportData = exportData;
+
+</script>
 </body>
 </html>

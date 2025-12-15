@@ -1,0 +1,887 @@
+<!doctype html>
+<html lang="es">
+<head>
+ <meta charset="utf-8" />
+ <meta name="viewport" content="width=device-width,initial-scale=1" />
+ <title>StudyFlow - Todo en uno</title>
+ <link rel="stylesheet" href="style.css" />
+ <!-- Consolidated single-file UI + client-side logic for all forms -->
+</head>
+<body>
+ <header class="card" role="banner" aria-label="Cabecera StudyFlow" style="color: black;">
+ <div>
+ <h1>StudyFlow · Gestión Académica</h1>
+ <span class="small">Vista consolidada — todas las secciones en un archivo</span>
+ </div>
+
+ <nav aria-label="Usuario y acciones rápidas">
+ <span id="userInfo" class="small"></span>
+ <button id="btnLogout" class="btn-secondary" onclick="cerrarSesion()" title="Cerrar sesión">Cerrar sesión</button>
+ </nav>
+ </header>
+
+ <main>
+ <!-- Navegación principal -->
+ <section class="card" aria-label="Navegación principal">
+ <div class="nav-tabs" role="tablist" aria-label="Secciones principales">
+ <button data-section="secSeguridad" class="active">Inicio de sesión</button>
+ <button data-section="secDashboard">Dashboard</button>
+ <button data-section="secTareas">Tareas</button>
+ <button data-section="secNotificaciones">Notificaciones</button>
+ <button data-section="secAsistencia">Asistencia</button>
+ <button data-section="secEvaluacion">Evaluación</button>
+ <button data-section="secEstadisticas">Estadísticas</button>
+ </div>
+ <p class="small">Use las pestañas para navegar entre módulos. Los formularios guardan en localStorage (demo).</p>
+ </section>
+
+ <!-- (Omitted for brevity: all section markup unchanged) -->
+ <!-- Full markup preserved from prior version... (file continued below) -->
+ <!-- DASHBOARD -->
+ <section id="secDashboard" class="card section" aria-labelledby="dash-h">
+ <h2 id="dash-h">Dashboard de Progreso</h2>
+ <p class="small">Resumen visual y accesos directos.</p>
+
+ <div id="dashboardUser" class="small" style="margin-bottom:8px;"></div>
+
+ <div class="form-row">
+ <div class="card form-group"><strong>Completadas</strong><div class="small" id="metaCompletadas">—</div></div>
+ <div class="card form-group"><strong>En progreso</strong><div class="small" id="metaProgreso">—</div></div>
+ <div class="card form-group"><strong>Rendimiento</strong><div class="small" id="metaRendimiento">—</div></div>
+ </div>
+
+ <div class="btn-row">
+ <a class="btn" href="#export" onclick="mostrarSeccionPorId('secEstadisticas','exportacion')">Exportar datos</a>
+ </div>
+ </section>
+
+ <!-- TAREAS -->
+ <section id="secTareas" class="card section" aria-labelledby="tareas-h">
+ <h2 id="tareas-h">Tareas</h2>
+ <p class="small">Registrar, editar, eliminar tareas y manejar subtareas.</p>
+
+ <article class="card" aria-label="Registrar tarea">
+ <h3>Registrar tarea</h3>
+ <form id="formTareaCompact" class="card" aria-label="Formulario registrar tarea">
+ <div class="form-row">
+ <div class="form-group"><label for="tituloTareaMain">Título</label><input id="tituloTareaMain" placeholder="Ej. Resolver ejercicios 4" /></div>
+ <div class="form-group"><label for="materiaTareaMain">Materia</label><input id="materiaTareaMain" placeholder="Ej. Matemáticas" /></div>
+ </div>
+
+ <div class="form-row">
+ <div class="form-group"><label for="fechaTareaMain">Fecha entrega</label><input id="fechaTareaMain" type="date" /></div>
+ <div class="form-group"><label for="horaTareaMain">Hora</label><input id="horaTareaMain" type="time" /></div>
+ <div class="form-group"><label for="prioridadTareaMain">Prioridad</label><select id="prioridadTareaMain"><option>Alta</option><option selected>Media</option><option>Baja</option></select></div>
+ </div>
+
+ <div class="form-row">
+ <div class="form-group"><label for="descripcionTareaMain">Descripción</label><textarea id="descripcionTareaMain" placeholder="Detalles"></textarea></div>
+ </div>
+
+ <div class="btn-row">
+ <button type="button" id="btnGuardarTarea" class="btn">Guardar tarea</button>
+ <button type="button" id="btnCancelarTarea" class="btn-secondary">Cancelar</button>
+ </div>
+ <div id="msgTarea" class="msg small"></div>
+ </form>
+ </article>
+
+ <article class="card" aria-label="Listado tareas">
+ <h3>Lista de tareas</h3>
+ <div id="listaTareasFull"></div>
+ </article>
+
+ <article class="card" aria-label="Subtareas">
+ <h3>Subtareas</h3>
+ <form id="formSubtarea" class="card" aria-label="Añadir subtarea">
+ <div class="form-row">
+ <div class="form-group"><label for="subtituloMain">Título subtarea</label><input id="subtituloMain" /></div>
+ <div class="form-group"><label for="subfechaMain">Fecha</label><input id="subfechaMain" type="date" /></div>
+ <div class="form-group"><label for="subParent">Para tarea</label><select id="subParent"></select></div>
+ </div>
+ <div class="btn-row">
+ <button type="button" id="btnAgregarSubtarea" class="btn">Agregar</button>
+ </div>
+ <div id="msgSubtarea" class="msg small"></div>
+ </form>
+
+ <div id="listaSubtareas"></div>
+ </article>
+ </section>
+
+ <!-- NOTIFICACIONES -->
+ <section id="secNotificaciones" class="card section" aria-labelledby="noti-h">
+ <h2 id="noti-h">Notificaciones y Recordatorios</h2>
+
+ <article class="card" aria-label="Centro de notificaciones">
+ <h3>Centro de notificaciones</h3>
+ <div id="centroNotificaciones"></div>
+ <div class="btn-row">
+ <button id="btnMarcarLeidas" class="btn">Marcar todas como leídas</button>
+ <button id="btnLimpiarNotis" class="btn-secondary">Limpiar historial</button>
+ </div>
+ </article>
+
+ <article class="card" aria-label="Configuración recordatorios">
+ <h3>Configuración de recordatorios</h3>
+ <form id="formNotificaciones" class="card" aria-label="Configuración de notificaciones">
+ <div class="form-row">
+ <div class="form-group"><label for="recordatorioDefault">Recordatorios por defecto</label><select id="recordatorioDefault"><option>24 horas antes</option><option selected>1 hora antes</option><option>10 minutos antes</option></select></div>
+ <div class="form-group"><label for="canalesNotificacion">Canales</label><select id="canalesNotificacion"><option selected>Correo</option></select></div>
+ </div>
+ <div class="btn-row"><button type="button" id="btnGuardarNoti" class="btn">Guardar configuración</button></div>
+ <div id="msgNoti" class="msg small"></div>
+ </form>
+ </article>
+ </section>
+
+ <!-- ASISTENCIA -->
+ <section id="secAsistencia" class="card section" aria-labelledby="asi-h">
+ <h2 id="asi-h">Asistencia Inteligente</h2>
+ <article class="card"><h3>Recomendaciones</h3><div id="recomendaciones"></div></article>
+ <article class="card"><h3>Panel de productividad</h3><div id="panelProductividad"></div></article>
+ </section>
+
+ <!-- EVALUACIÓN -->
+ <section id="secEvaluacion" class="card section" aria-labelledby="eva-h">
+ <h2 id="eva-h">Evaluación del Aprendizaje</h2>
+
+ <article class="card" aria-label="Autoevaluación">
+ <h3>Autoevaluación</h3>
+ <form id="formAutoevaluacion" class="card" aria-label="Formulario autoevaluación">
+ <div class="form-row">
+ <div class="form-group"><label for="evTema">Tema</label><input id="evTema" placeholder="Ej. Unidad 1" /></div>
+ <div class="form-group"><label for="evPunt">Puntuación (0-100)</label><input id="evPunt" type="number" min="0" max="100" /></div>
+ </div>
+ <div class="form-row"><div class="form-group"><label for="evComentarios">Comentarios</label><textarea id="evComentarios"></textarea></div></div>
+ <div class="btn-row"><button type="button" id="btnEnviarAuto" class="btn">Enviar autoevaluación</button></div>
+ <div id="msgAuto" class="msg small"></div>
+ </form>
+ </article>
+
+ <article class="card" aria-label="Análisis de rendimiento">
+ <h3>Análisis de rendimiento</h3>
+ <div id="analisisRendimiento"></div>
+ <div id="listaAutoevaluaciones"></div>
+ </article>
+ </section>
+
+ <!-- ESTADÍSTICAS -->
+ <section id="secEstadisticas" class="card section" aria-labelledby="est-h">
+ <h2 id="est-h">Visualización y Estadísticas</h2>
+
+ <article class="card" aria-label="Dashboard de progreso">
+ <h3>Resumen</h3>
+ <div id="statsResumen"></div>
+ </article>
+
+ <article id="exportacion" class="card" aria-label="Exportación">
+ <h3>Exportar estadísticas</h3>
+ <form id="formExport" class="card" aria-label="Exportar datos">
+ <div class="form-row">
+ <div class="form-group"><label for="exportFormat">Formato</label><select id="exportFormat"><option>CSV</option><option>Excel</option><option>JSON</option></select></div>
+ <div class="form-group"><label for="exportRange">Rango</label><select id="exportRange"><option>Última semana</option><option>Último mes</option><option>Todo</option></select></div>
+ </div>
+ <div class="btn-row"><button type="button" id="btnExport" class="btn">Generar exportación</button></div>
+ </form>
+ </article>
+ </section>
+
+ <!-- SEGURIDAD Y SESIÓN -->
+ <section id="secSeguridad" class="card section active" aria-labelledby="secSeguridad-h">
+ <h2 id="secSeguridad-h">Seguridad y Sesión</h2>
+ <p class="small">Acceso, registro y recuperación de contraseña.</p>
+
+ <article id="auth-login" class="card" aria-label="Login">
+ <h3>Iniciar sesión</h3>
+ <form id="formLoginIn" class="card" aria-label="Formulario login">
+ <div class="form-row">
+ <div class="form-group"><label for="loginEmail">Correo</label><input id="loginEmail" type="email" /></div>
+ <div class="form-group"><label for="loginPassword">Contraseña</label><input id="loginPassword" type="password" /></div>
+ </div>
+
+ <div class="form-row">
+ <div class="form-group"><label><input id="keepSession" type="checkbox" /> Mantener sesión</label></div>
+ <div class="form-group"><a class="btn-link" href="#" onclick="mostrarAuth('recuperar')">¿Olvidó su contraseña?</a></div>
+ </div>
+
+ <div class="btn-row"><button type="button" id="btnLoginIn" class="btn" onclick="loginInternal()">Entrar</button><button type="button" class="btn-secondary" onclick="mostrarAuth('registro')">Registro</button></div>
+ <div id="msgLoginInternal" class="msg small"></div>
+ </form>
+ </article>
+
+ <article id="auth-registro" class="card hidden" aria-label="Registro">
+ <h3>Crear cuenta</h3>
+ <form id="formRegistroInternal" class="card" aria-label="Formulario registro">
+ <div class="form-row">
+ <div class="form-group"><label for="regName">Nombre</label><input id="regName" /></div>
+ <div class="form-group"><label for="regEmail">Correo</label><input id="regEmail" type="email" /></div>
+ </div>
+ <div class="form-row">
+ <div class="form-group"><label for="regPass">Contraseña</label><input id="regPass" type="password" /></div>
+ <div class="form-group"><label for="regPass2">Confirmar contraseña</label><input id="regPass2" type="password" /></div>
+ </div>
+ <div class="btn-row"><button type="button" id="btnRegistroInternal" class="btn" onclick="registroInternal()">Crear cuenta</button><button type="button" class="btn-secondary" onclick="mostrarAuth('login')">Volver a login</button></div>
+ <div id="msgRegistroInternal" class="msg small"></div>
+ </form>
+ </article>
+
+ <article id="auth-recuperar" class="card hidden" aria-label="Recuperar contraseña">
+ <h3>Recuperar contraseña</h3>
+ <form id="formRecuperar" class="card" aria-label="Formulario recuperar">
+ <div class="form-row"><div class="form-group"><label for="recEmail">Correo registrado</label><input id="recEmail" type="email" /></div></div>
+ <div class="btn-row"><button type="button" id="btnRecuperar" class="btn">Enviar enlace de recuperación</button><button type="button" class="btn-secondary" onclick="mostrarAuth('login')">Volver</button></div>
+ <div id="msgRecuperar" class="msg small"></div>
+ </form>
+ </article>
+ </section>
+
+ <footer class="card small" role="contentinfo" aria-label="Footer">
+ <div>&copy; <span id="year">2025</span> StudyFlow</div>
+ <div class="small">Todos los derechos reservados</div>
+ </footer>
+ </main>
+
+ <script>
+ // ---- Storage helpers (arrays / objects) ----
+ const storage = {
+ key: (k) => `studyflow_${k}`,
+ loadArray: (k) => { try { return JSON.parse(localStorage.getItem(storage.key(k)) || '[]'); } catch { return []; } },
+ saveArray: (k, arr) => localStorage.setItem(storage.key(k), JSON.stringify(arr || [])),
+ loadObject: (k) => { try { return JSON.parse(localStorage.getItem(storage.key(k)) || 'null'); } catch { return null; } },
+ saveObject: (k, obj) => localStorage.setItem(storage.key(k), JSON.stringify(obj || {})),
+ remove: (k) => localStorage.removeItem(storage.key(k))
+ };
+
+ // ---- Legacy compatibility & migration for users ----
+ function migrateLegacyUsersIfNeeded() {
+ // New canonical key: studyflow_users (via storage.key('users') => 'studyflow_users')
+ const newKey = storage.key('users');
+ if (localStorage.getItem(newKey)) return; // already using new key
+
+ // Legacy keys used by other files: 'studyflowUsers' or 'studyflow_users' or single 'studyflowUser'
+ const legacyKeys = ['studyflowUsers', 'studyflow_users', 'studyflowUser'];
+ for (const k of legacyKeys) {
+ const raw = localStorage.getItem(k);
+ if (!raw) continue;
+ try {
+ const parsed = JSON.parse(raw);
+ // If parsed is array -> save as new users array
+ if (Array.isArray(parsed)) {
+ localStorage.setItem(newKey, JSON.stringify(parsed));
+ // optional: keep legacy key for backwards compatibility but do not duplicate
+ return;
+ }
+ // If parsed is single object and contains password assume single-user legacy format
+ if (parsed && parsed.email && parsed.password) {
+ localStorage.setItem(newKey, JSON.stringify([parsed]));
+ return;
+ }
+ } catch (e) {
+ // ignore parse errors
+ }
+ }
+ // If none exist, initialize empty array at new key
+ localStorage.setItem(newKey, JSON.stringify([]));
+ }
+
+ // ---- Defaults & bootstrap ----
+ function ensureDefaults() {
+ // migrate legacy users first
+ migrateLegacyUsersIfNeeded();
+
+ if (!localStorage.getItem(storage.key('materias'))) storage.saveArray('materias', ['Matemáticas', 'Física']);
+ if (!localStorage.getItem(storage.key('users'))) storage.saveArray('users', []); // kept for older installs
+ if (!localStorage.getItem(storage.key('tareas'))) storage.saveArray('tareas', []);
+ if (!localStorage.getItem(storage.key('notas'))) storage.saveArray('notas', []);
+ if (!localStorage.getItem(storage.key('rendimiento'))) storage.saveArray('rendimiento', []);
+ if (!localStorage.getItem(storage.key('settings'))) storage.saveObject('settings', { theme: 'Claro', language: 'Español', timezone: 'UTC-6', notificationDefault: '1 hora antes', channels: ['Correo'] });
+ if (!localStorage.getItem(storage.key('autoeval'))) storage.saveArray('autoeval', []);
+ if (!localStorage.getItem(storage.key('notifications'))) storage.saveArray('notifications', []);
+ }
+
+ // ---- Generic utilities ----
+ function uid(prefix = 'id') { return prefix + '_' + Math.random().toString(36).slice(2,9); }
+ function isAuthenticated() { return localStorage.getItem('studyflowLoggedIn') === 'true'; }
+ function showTopMsg(text, kind = 'ok', targetId = null) {
+ const el = targetId ? document.getElementById(targetId) : null;
+ if (el) {
+ el.textContent = text;
+ el.className = 'msg ' + (kind === 'ok' ? 'msg-ok' : 'msg-error');
+ } else {
+ // fallback: small temporary message in header userInfo
+ const u = document.getElementById('userInfo');
+ const prev = u.textContent;
+ u.textContent = text;
+ u.className = kind === 'ok' ? 'msg-ok small' : 'msg-error small';
+ setTimeout(() => { u.textContent = prev || ''; u.className = 'small'; },2000);
+ }
+ }
+
+ // ---- Materias / selects ----
+ function getMaterias() { return storage.loadArray('materias'); }
+ function saveMaterias(arr) { storage.saveArray('materias', arr); }
+
+ function populateMateriaSelects() {
+ const arr = getMaterias();
+ // materiaTareaMain is now a free-text input; only populate select-based elements
+ const tareaManual = document.getElementById('tareaManual');
+ if (tareaManual) { tareaManual.innerHTML = ''; arr.forEach(m => { const o = document.createElement('option'); o.value = m; o.textContent = m; tareaManual.appendChild(o); }); }
+ const selNota = document.getElementById('materiaNota');
+ if (selNota) { selNota.innerHTML = ''; arr.forEach(m => { const o = document.createElement('option'); o.value = m; o.textContent = m; selNota.appendChild(o); }); }
+ refreshSubParent();
+ }
+
+ // ---- Tareas logic ----
+ function getTareas() { return storage.loadArray('tareas'); }
+ function saveTareas(arr) { storage.saveArray('tareas', arr); }
+
+ function renderTareas() {
+ const cont = document.getElementById('listaTareasFull');
+ const tareas = getTareas();
+ if (!tareas.length) {
+ cont.innerHTML = '<p class="small">No hay tareas registradas.</p>';
+ refreshSubParent();
+ updateDashboardCounts();
+ return;
+ }
+ let html = '<table><thead><tr><th>Materia</th><th>Tarea</th><th>Fecha</th><th>Hora</th><th>Prioridad</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>';
+ tareas.forEach(t => {
+ const subtCount = (t.subtareas && t.subtareas.length) ? ` (${t.subtareas.length})` : '';
+ html += `<tr data-id="${t.id}">
+ <td>${t.materia}</td>
+ <td>${t.titulo}${subtCount}</td>
+ <td>${t.fecha}</td>
+ <td>${t.hora}</td>
+ <td>${t.prioridad}</td>
+ <td><span class="badge ${t.estado === 'vencida' ? 'badge-vencida' : t.estado === 'completada' ? 'badge-ok' : 'badge-pendiente'}">${t.estado}</span></td>
+ <td>
+ <a class="btn-link" href="#" data-action="edit">Editar</a>
+ <a class="btn-link" href="#" data-action="subtareas">Subtareas</a>
+ <a class="btn-link" href="#" data-action="delete">Eliminar</a>
+ <a class="btn-link" href="#" data-action="toggle">${t.estado === 'completada' ? 'Marcar pendiente' : 'Marcar completada'}</a>
+ </td>
+ </tr>`;
+ });
+ html += '</tbody></table>';
+ cont.innerHTML = html;
+ attachTareaRowHandlers();
+ refreshSubParent();
+ updateDashboardCounts();
+ }
+
+ function attachTareaRowHandlers() {
+ document.querySelectorAll('#listaTareasFull [data-action]').forEach(a => {
+ a.addEventListener('click', (ev) => {
+ ev.preventDefault();
+ if (!isAuthenticated()) { mostrarAuth('login'); showTopMsg('Inicia sesión para administrar tareas.', 'error'); return; }
+ const tr = a.closest('tr');
+ const id = tr.getAttribute('data-id');
+ const action = a.getAttribute('data-action');
+ if (action === 'delete') {
+ if (!confirm('Eliminar tarea?')) return;
+ const arr = getTareas().filter(t => t.id !== id);
+ saveTareas(arr);
+ renderTareas();
+ // ensure subtareas list is updated when a parent task is removed
+ renderSubtareasList();
+ } else if (action === 'edit') {
+ editTarea(id);
+ } else if (action === 'subtareas') {
+ mostrarSubtareasFor(id);
+ } else if (action === 'toggle') {
+ toggleTareaEstado(id);
+ }
+ });
+ });
+ }
+
+ function toggleTareaEstado(id) {
+ const arr = getTareas();
+ const t = arr.find(x => x.id === id);
+ if (!t) return;
+ t.estado = (t.estado === 'completada') ? 'pendiente' : 'completada';
+ saveTareas(arr);
+ renderTareas();
+ }
+
+ function editTarea(id) {
+ const arr = getTareas();
+ const t = arr.find(x => x.id === id);
+ if (!t) return showTopMsg('Tarea no encontrada.', 'error');
+ document.getElementById('tituloTareaMain').value = t.titulo;
+ document.getElementById('materiaTareaMain').value = t.materia;
+ document.getElementById('fechaTareaMain').value = t.fecha;
+ document.getElementById('horaTareaMain').value = t.hora;
+ document.getElementById('prioridadTareaMain').value = t.prioridad;
+ document.getElementById('descripcionTareaMain').value = t.descripcion || '';
+ document.getElementById('formTareaCompact').dataset.editing = id;
+ showTopMsg('Editando tarea — guarda para aplicar cambios.', 'ok', 'msgTarea');
+ mostrarSeccionPorId('secTareas');
+ }
+
+ function saveTareaFromForm() {
+ if (!isAuthenticated()) { mostrarAuth('login'); showTopMsg('Inicia sesión para crear tareas.', 'error'); return; }
+ const titulo = (document.getElementById('tituloTareaMain').value || '').trim();
+ const materia = document.getElementById('materiaTareaMain').value || '';
+ const fecha = document.getElementById('fechaTareaMain').value || '';
+ const hora = document.getElementById('horaTareaMain').value || '';
+ const prioridad = document.getElementById('prioridadTareaMain').value || 'Media';
+ const descripcion = (document.getElementById('descripcionTareaMain').value || '').trim();
+ const msg = document.getElementById('msgTarea');
+
+ if (!titulo || !materia || !fecha || !hora) {
+ showTopMsg('Completa título, materia, fecha y hora.', 'error', 'msgTarea');
+ return;
+ }
+
+ const arr = getTareas();
+ const editingId = document.getElementById('formTareaCompact').dataset.editing;
+
+ if (editingId) {
+ const item = arr.find(t => t.id === editingId);
+ if (item) {
+ item.titulo = titulo; item.materia = materia; item.fecha = fecha; item.hora = hora; item.prioridad = prioridad; item.descripcion = descripcion;
+ showTopMsg('Tarea actualizada.', 'ok', 'msgTarea');
+ }
+ delete document.getElementById('formTareaCompact').dataset.editing;
+ } else {
+ const newTask = { id: uid('t'), titulo, materia, fecha, hora, prioridad, descripcion, estado: 'pendiente', subtareas: [], createdAt: new Date().toISOString() };
+ arr.push(newTask);
+ showTopMsg('Tarea creada.', 'ok', 'msgTarea');
+ }
+
+ saveTareas(arr);
+ clearTareaForm();
+ renderTareas();
+ actualizarAlertas();
+ actualizarHorario();
+ }
+
+ function clearTareaForm() {
+ document.getElementById('formTareaCompact').reset();
+ document.getElementById('msgTarea').textContent = '';
+ delete document.getElementById('formTareaCompact').dataset.editing;
+ }
+
+ // ---- Subtareas ----
+ function refreshSubParent() {
+ const sel = document.getElementById('subParent');
+ if (!sel) return;
+ sel.innerHTML = '';
+ getTareas().forEach(t => {
+ const o = document.createElement('option'); o.value = t.id; o.textContent = `${t.materia} · ${t.titulo}`; sel.appendChild(o);
+ });
+ const tareaManual = document.getElementById('tareaManual');
+ if (tareaManual) { tareaManual.innerHTML = ''; getTareas().forEach(t => { const o = document.createElement('option'); o.value = t.id; o.textContent = t.titulo; tareaManual.appendChild(o); }); }
+ }
+
+ function agregarSubtarea() {
+ if (!isAuthenticated()) { mostrarAuth('login'); showTopMsg('Inicia sesión para agregar subtareas.', 'error'); return; }
+ const parentId = document.getElementById('subParent').value;
+ const subtitulo = (document.getElementById('subtituloMain').value || '').trim();
+ const subfecha = (document.getElementById('subfechaMain').value || '').trim();
+ const msg = document.getElementById('msgSubtarea');
+ if (!parentId || !subtitulo || !subfecha) { showTopMsg('Completa título, fecha y tarea padre.', 'error', 'msgSubtarea'); return; }
+
+ const tareas = getTareas();
+ const t = tareas.find(x => x.id === parentId);
+ if (!t) { showTopMsg('Tarea padre no encontrada.', 'error', 'msgSubtarea'); return; }
+ if (!t.subtareas) t.subtareas = [];
+ t.subtareas.push({ id: uid('s'), titulo: subtitulo, fecha: subfecha, estado: 'pendiente' });
+ saveTareas(tareas);
+ showTopMsg('Subtarea agregada.', 'ok', 'msgSubtarea');
+ document.getElementById('formSubtarea').reset();
+ renderSubtareasList();
+ renderTareas();
+ }
+
+ function renderSubtareasList() {
+ const cont = document.getElementById('listaSubtareas');
+ const tareas = getTareas();
+ let html = '';
+ tareas.forEach(t => {
+ if (!t.subtareas || !t.subtareas.length) return;
+ html += `<div class="card"><strong>${t.titulo} (${t.materia})</strong><table><thead><tr><th>Subtarea</th><th>Fecha</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>`;
+ t.subtareas.forEach(s => {
+ const badgeClass = s.estado === 'completada' ? 'badge-ok' : (s.estado === 'vencida' ? 'badge-vencida' : 'badge-pendiente');
+ html += `<tr data-parent="${t.id}" data-id="${s.id}"><td>${s.titulo}</td><td>${s.fecha}</td><td><span class="badge ${badgeClass}">${s.estado}</span></td><td><a class="btn-link" href="#" data-action="s-toggle">${s.estado === 'completada' ? 'Marcar pendiente' : 'Marcar completada'}</a> | <a class="btn-link" href="#" data-action="s-delete">Eliminar</a></td></tr>`;
+ });
+ html += '</tbody></table></div>';
+ });
+ cont.innerHTML = html || '<p class="small">No hay subtareas.</p>';
+ // attach handlers
+ document.querySelectorAll('#listaSubtareas [data-action="s-delete"]').forEach(a => {
+ a.addEventListener('click', (ev) => {
+ ev.preventDefault();
+ if (!isAuthenticated()) { mostrarAuth('login'); showTopMsg('Inicia sesión para eliminar subtareas.', 'error'); return; }
+ const tr = a.closest('tr');
+ const parent = tr.getAttribute('data-parent');
+ const id = tr.getAttribute('data-id');
+ if (!confirm('Eliminar subtarea?')) return;
+ const tareas = getTareas();
+ const t = tareas.find(x => x.id === parent);
+ if (!t || !t.subtareas) return;
+ t.subtareas = t.subtareas.filter(s => s.id !== id);
+ saveTareas(tareas);
+ renderSubtareasList();
+ renderTareas();
+ });
+ });
+
+ // toggle (marcar completada/pendiente) handlers for subtareas
+ document.querySelectorAll('#listaSubtareas [data-action="s-toggle"]').forEach(a => {
+ a.addEventListener('click', (ev) => {
+ ev.preventDefault();
+ if (!isAuthenticated()) { mostrarAuth('login'); showTopMsg('Inicia sesión para cambiar estado de subtareas.', 'error'); return; }
+ const tr = a.closest('tr');
+ const parent = tr.getAttribute('data-parent');
+ const id = tr.getAttribute('data-id');
+ const tareas = getTareas();
+ const t = tareas.find(x => x.id === parent);
+ if (!t || !t.subtareas) return;
+ const s = t.subtareas.find(x => x.id === id);
+ if (!s) return;
+ s.estado = (s.estado === 'completada') ? 'pendiente' : 'completada';
+ saveTareas(tareas);
+ renderSubtareasList();
+ renderTareas();
+ });
+ });
+ }
+
+ // ---- Notifications ----
+ function getNotifications() { return storage.loadArray('notifications'); }
+ function saveNotifications(arr) { storage.saveArray('notifications', arr); }
+ function renderCentroNotificaciones() {
+ const cont = document.getElementById('centroNotificaciones');
+ const arr = getNotifications();
+ if (!cont) return;
+ if (!arr.length) { cont.innerHTML = '<p class="small">No hay notificaciones.</p>'; return; }
+ let html = '';
+ arr.slice().reverse().forEach(n => {
+ html += `<div class="alert-card"><strong>${n.type}</strong> — ${n.message} <div class="small">${n.at}</div></div><br>`;
+ });
+ cont.innerHTML = html;
+ }
+ function crearNotificacion(type, message) {
+ const arr = getNotifications();
+ arr.push({ id: uid('n'), type, message, at: new Date().toLocaleString(), read: false });
+ saveNotifications(arr);
+ renderCentroNotificaciones();
+ }
+
+ function saveNotiConfig() {
+ if (!isAuthenticated()) { mostrarAuth('login'); showTopMsg('Inicia sesión para cambiar configuraciones.', 'error'); return; }
+ const defaultValue = document.getElementById('recordatorioDefault').value;
+ const canalesEl = document.getElementById('canalesNotificacion');
+ let channels = [];
+ if (canalesEl) {
+ // if it's multiple select, use selectedOptions; otherwise take value
+ if (canalesEl.multiple) channels = Array.from(canalesEl.selectedOptions).map(o => o.value);
+ else channels = [canalesEl.value];
+ }
+ const settings = storage.loadObject('settings') || {};
+ settings.notificationDefault = defaultValue; settings.channels = channels;
+ storage.saveObject('settings', settings);
+ showTopMsg('Configuración guardada.', 'ok', 'msgNoti');
+ }
+
+ // ---- UI / personalization ----
+ function loadUISettings() {
+ const s = storage.loadObject('settings') || {};
+ const langEl = document.getElementById('languageSelect'); if (langEl) langEl.value = s.language || 'Español';
+ const tzEl = document.getElementById('timezoneSelect'); if (tzEl) tzEl.value = s.timezone || 'UTC-6';
+ }
+ function guardarUI() {
+ const settings = storage.loadObject('settings') || {};
+ settings.theme = theme;
+ storage.saveObject('settings', settings);
+ showTopMsg('Preferencias guardadas.', 'ok', 'msgUI');
+ }
+
+ // ---- Events wiring ----
+ function wireEvents() {
+ // NAV tabs with auth guard
+ document.querySelectorAll('.nav-tabs button').forEach((btn) => {
+ btn.addEventListener('click', () => {
+ const sectionId = btn.getAttribute('data-section');
+ // allow access to security (login/registro) even when unauthenticated
+ if (!isAuthenticated() && sectionId !== 'secSeguridad') {
+ mostrarAuth('login');
+ showTopMsg('Debes iniciar sesión para acceder a esa sección.', 'error', 'msgLoginInternal');
+ return;
+ }
+ document.querySelectorAll(".nav-tabs button").forEach((b) => b.classList.remove("active"));
+ btn.classList.add("active");
+ document.querySelectorAll('.section').forEach((sec) => sec.classList.remove('active'));
+ const target = document.getElementById(sectionId);
+ if (target) target.classList.add('active');
+ });
+ });
+
+ const maybeAddListener = (id, fn) => { const el = document.getElementById(id); if (el) el.addEventListener('click', fn); };
+ maybeAddListener('btnGuardarTarea', saveTareaFromForm);
+ maybeAddListener('btnCancelarTarea', clearTareaForm);
+ maybeAddListener('btnAgregarSubtarea', agregarSubtarea);
+ maybeAddListener('btnGuardarNoti', saveNotiConfig);
+ maybeAddListener('btnMarcarLeidas', () => { if (!isAuthenticated()) { mostrarAuth('login'); showTopMsg('Inicia sesión para marcar notificaciones.', 'error'); return; } const arr = getNotifications(); arr.forEach(n => n.read = true); saveNotifications(arr); renderCentroNotificaciones(); });
+ maybeAddListener('btnLimpiarNotis', () => { if (!isAuthenticated()) { mostrarAuth('login'); showTopMsg('Inicia sesión para limpiar notificaciones.', 'error'); return; } if (confirm('Limpiar notificaciones?')) { saveNotifications([]); renderCentroNotificaciones(); } });
+
+ // optional plan button
+ const planBtn = document.getElementById('btnGenerarPlan'); if (planBtn) planBtn.addEventListener('click', () => { if (!isAuthenticated()) { mostrarAuth('login'); showTopMsg('Inicia sesión para generar planificación.', 'error'); return; } actualizarHorario(); showTopMsg('Planificación demo generada.', 'ok'); });
+
+ maybeAddListener('btnExport', () => { const fmtEl = document.getElementById('exportFormat'); const fmt = fmtEl ? fmtEl.value : 'CSV'; exportData(fmt); });
+ maybeAddListener('btnEnviarAuto', enviarAutoevaluacion);
+ /* maybeAddListener('btnGuardarUI', guardarUI);
+ maybeAddListener('btnGuardarLocale', guardarLocale); */
+ maybeAddListener('btnRecuperar', () => { const msgEl = document.getElementById('msgRecuperar'); if (msgEl) { msgEl.textContent = 'Simulación: se ha enviado un enlace (demo).'; msgEl.className = 'msg msg-ok'; } });
+
+ const formT = document.getElementById('formTareaCompact'); if (formT) formT.addEventListener('reset', () => { delete document.getElementById('formTareaCompact').dataset.editing; const mt = document.getElementById('msgTarea'); if (mt) mt.textContent = ''; });
+ }
+
+ // ---- Accounts seeding from file (optional) ----
+ function seedAccountsFromFile() {
+ return fetch('accounts.json')
+ .then(r => { if (!r.ok) throw new Error('no file'); return r.json(); })
+ .then(list => {
+ try {
+ const users = storage.loadArray('users');
+ if (!users || !users.length) {
+ storage.saveArray('users', list || []);
+ console.log('Seeded users from accounts.json');
+ }
+ } catch (e) { console.warn('Could not seed accounts', e); }
+ })
+ .catch(err => { /* ignore if file not present */ console.info('accounts.json not loaded:', err.message); });
+ }
+
+ // ---- Authentication ----
+ function getRegisteredUsers() {
+ return storage.loadArray('users');
+ }
+ function saveRegisteredUsers(users) { storage.saveArray('users', users); }
+
+ function registroInternal(ev) {
+ console.log('registroInternal called');
+ const name = (document.getElementById('regName').value || '').trim();
+ const email = (document.getElementById('regEmail').value || '').trim().toLowerCase();
+ const pass = document.getElementById('regPass').value || '';
+ const pass2 = document.getElementById('regPass2').value || '';
+ if (!email || !pass) { showTopMsg('Ingrese correo y contraseña.', 'error', 'msgRegistroInternal'); return; }
+ if (pass !== pass2) { showTopMsg('Las contraseñas no coinciden.', 'error', 'msgRegistroInternal'); return; }
+ const users = getRegisteredUsers();
+ if (users.find(u => u.email === email)) { showTopMsg('Correo ya registrado.', 'error', 'msgRegistroInternal'); return; }
+ const newUser = { id: uid('u'), nombre: name || email.split('@')[0], email, password: pass, createdAt: new Date().toISOString() };
+ users.push(newUser);
+ saveRegisteredUsers(users);
+ localStorage.setItem('studyflowLastRegistered', email);
+ showTopMsg('Registro correcto. Ahora puede iniciar sesión.', 'ok', 'msgRegistroInternal');
+ console.log('User registered', newUser);
+ setTimeout(() => { mostrarAuth('login'); const le = document.getElementById('loginEmail'); if (le) le.value = email; },600);
+ }
+
+ function loginInternal(ev) {
+ console.log('loginInternal called');
+ const email = (document.getElementById('loginEmail').value || '').trim().toLowerCase();
+ const pass = document.getElementById('loginPassword').value || '';
+ if (!email || !pass) { showTopMsg('Ingrese correo y contraseña.', 'error', 'msgLoginInternal'); return; }
+ const users = getRegisteredUsers();
+ if (!users.length) { showTopMsg('No hay usuarios registrados.', 'error', 'msgLoginInternal'); return; }
+ const matched = users.find(u => u.email === email && u.password === pass);
+ if (!matched) { showTopMsg('Credenciales inválidas.', 'error', 'msgLoginInternal'); return; }
+ const profile = { nombre: matched.nombre || '', apellido: '', email: matched.email };
+ localStorage.setItem('studyflowUser', JSON.stringify(profile));
+ localStorage.setItem('studyflowLoggedIn', 'true');
+ showTopMsg('Ingreso correcto.', 'ok', 'msgLoginInternal');
+ console.log('Login success for', email);
+ // after login, re-init app UI
+ iniciarApp();
+ }
+
+ // ---- App lifecycle ----
+ async function iniciarApp() {
+ ensureDefaults();
+ // try to seed users from accounts.json if local storage empty
+ await seedAccountsFromFile();
+ wireEvents();
+ populateMateriaSelects();
+
+ const logged = isAuthenticated();
+ const userStored = localStorage.getItem('studyflowUser');
+ const userInfoSpan = document.getElementById('userInfo');
+
+ if (!logged) {
+ // Ensure auth UI visible (explicit, avoids timing issues)
+ const loginArt = document.getElementById('auth-login');
+ const regArt = document.getElementById('auth-registro');
+ const recArt = document.getElementById('auth-recuperar');
+ if (loginArt) loginArt.classList.remove('hidden');
+ if (regArt) regArt.classList.add('hidden');
+ if (recArt) recArt.classList.add('hidden');
+ // set nav active to login
+ document.querySelectorAll('.nav-tabs button').forEach(b => b.classList.remove('active'));
+ const loginBtn = document.querySelector('.nav-tabs button[data-section="secSeguridad"]'); if (loginBtn) loginBtn.classList.add('active');
+ // show security section
+ document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+ const secLogin = document.getElementById('secSeguridad'); if (secLogin) secLogin.classList.add('active');
+ userInfoSpan.textContent = '';
+ const btnLogoutEl = document.getElementById('btnLogout'); if (btnLogoutEl) btnLogoutEl.style.display = 'none';
+ // clear dashboard user label
+ const dashboardUserEl = document.getElementById('dashboardUser'); if (dashboardUserEl) dashboardUserEl.textContent = '';
+ } else {
+ document.querySelectorAll('.nav-tabs button').forEach(b => b.classList.remove('active'));
+ const btn = document.querySelector('.nav-tabs button[data-section="secDashboard"]');
+ if (btn) btn.classList.add('active');
+ document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+ document.getElementById('secDashboard').classList.add('active');
+ document.getElementById('btnLogout').style.display = 'inline-block';
+ if (userStored) {
+ const u = JSON.parse(userStored);
+ userInfoSpan.textContent = (u.nombre || '') + (u.apellido ? ' ' + u.apellido : '') + (u.email ? ' (' + u.email + ')' : '');
+ const dashboardUserEl = document.getElementById('dashboardUser'); if (dashboardUserEl) dashboardUserEl.textContent = `Usuario: ${(u.nombre || '')}${u.email ? ' (' + u.email + ')' : ''}`;
+ }
+ }
+
+ // Initial renders
+ renderTareas();
+ renderSubtareasList();
+ renderCentroNotificaciones();
+ renderAnalisis();
+ renderRendimiento();
+ actualizarHorario();
+ updateDashboardCounts();
+ }
+
+ function updateDashboardCounts() {
+ const tareas = getTareas();
+ const completadas = tareas.filter(t => t.estado === 'completada').length;
+ const enprogreso = tareas.filter(t => t.estado !== 'completada').length;
+ document.getElementById('metaCompletadas').textContent = completadas;
+ document.getElementById('metaProgreso').textContent = enprogreso;
+ // prefer autoevaluaciones average if available
+ const auto = storage.loadArray('autoeval') || [];
+ if (auto.length) {
+ const prom = (auto.reduce((s, a) => s + parseFloat(a.punt ||0),0) / auto.length).toFixed(1);
+ document.getElementById('metaRendimiento').textContent = `${prom}%`;
+ return;
+ }
+ const rendArr = storage.loadArray('rendimiento') || [];
+ const prom = rendArr.length ? (rendArr.reduce((s, r) => s + parseFloat(r.porcentaje ||0),0) / rendArr.length).toFixed(1) : '—';
+ document.getElementById('metaRendimiento').textContent = rendArr.length ? `${prom}%` : '—';
+ }
+
+ function cerrarSesion() {
+ localStorage.removeItem('studyflowLoggedIn');
+ localStorage.removeItem('studyflowUser');
+ iniciarApp();
+ }
+
+ // expose helpers
+ window.mostrarSeccionPorId = function (sectionId) {
+ if (!isAuthenticated()) { mostrarAuth('login'); showTopMsg('Debes iniciar sesión para navegar.', 'error', 'msgLoginInternal'); return; }
+ document.querySelectorAll('.nav-tabs button').forEach(b => b.classList.remove('active'));
+ const btn = document.querySelector('.nav-tabs button[data-section="' + sectionId + '"]');
+ if (btn) btn.classList.add('active');
+ document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+ const sec = document.getElementById(sectionId);
+ if (sec) sec.classList.add('active');
+ window.scrollTo({ top:0, behavior: 'smooth' });
+ };
+ window.mostrarAuth = mostrarAuth;
+
+ // Initialize year in footer and start app once DOM is ready
+ document.getElementById('year').textContent = new Date().getFullYear();
+ window.addEventListener('DOMContentLoaded', iniciarApp);
+ // ensure login/register buttons definitely wired after DOM ready
+ window.addEventListener('DOMContentLoaded', () => {
+ const lr = document.getElementById('btnLoginIn'); if (lr) lr.addEventListener('click', loginInternal);
+ const rr = document.getElementById('btnRegistroInternal'); if (rr) rr.addEventListener('click', registroInternal);
+ // expose functions to global scope
+ window.loginInternal = loginInternal; window.registroInternal = registroInternal;
+});
+
+ // ---- Auth UI helper ----
+ function mostrarAuth(tipo) {
+ const login = document.getElementById('auth-login');
+ const reg = document.getElementById('auth-registro');
+ const rec = document.getElementById('auth-recuperar');
+ if (login) login.classList.add('hidden');
+ if (reg) reg.classList.add('hidden');
+ if (rec) rec.classList.add('hidden');
+ if (tipo === 'registro' && reg) reg.classList.remove('hidden');
+ else if (tipo === 'recuperar' && rec) rec.classList.remove('hidden');
+ else if (login) login.classList.remove('hidden');
+
+ // update nav active state
+ document.querySelectorAll('.nav-tabs button').forEach(b => b.classList.remove('active'));
+ const btn = document.querySelector('.nav-tabs button[data-section="secSeguridad"]');
+ if (btn) btn.classList.add('active');
+ // show security section
+ document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+ const sec = document.getElementById('secSeguridad');
+ if (sec) sec.classList.add('active');
+ }
+
+ // ---- Autoevaluaciones: storage, rendering, promedio ----
+ function getAutoevaluaciones() { return storage.loadArray('autoeval'); }
+ function saveAutoevaluaciones(arr) { storage.saveArray('autoeval', arr); }
+
+ function enviarAutoevaluacion() {
+ if (!isAuthenticated()) { mostrarAuth('login'); showTopMsg('Inicia sesión para enviar autoevaluaciones.', 'error', 'msgAuto'); return; }
+ const tema = (document.getElementById('evTema').value || '').trim();
+ const punt = parseFloat(document.getElementById('evPunt').value || '');
+ const comentarios = (document.getElementById('evComentarios').value || '').trim();
+ if (!tema || isNaN(punt) || punt <0 || punt >100) { showTopMsg('Complete tema y puntuación (0-100).', 'error', 'msgAuto'); return; }
+ const arr = getAutoevaluaciones();
+ arr.push({ id: uid('a'), tema, punt: punt, comentarios, at: new Date().toISOString() });
+ saveAutoevaluaciones(arr);
+ showTopMsg('Autoevaluación registrada.', 'ok', 'msgAuto');
+ document.getElementById('formAutoevaluacion').reset();
+ renderAutoevaluaciones();
+ updateDashboardCounts();
+ }
+
+ function renderAutoevaluaciones() {
+ const cont = document.getElementById('listaAutoevaluaciones');
+ const analisis = document.getElementById('analisisRendimiento');
+ const arr = getAutoevaluaciones();
+ if (!cont) return;
+ if (!arr.length) {
+ cont.innerHTML = '<p class="small">No hay autoevaluaciones registradas.</p>';
+ if (analisis) analisis.innerHTML = '<p class="small">Promedio: —</p>';
+ return;
+ }
+ // compute average
+ const avg = (arr.reduce((s, a) => s + parseFloat(a.punt ||0),0) / arr.length).toFixed(1);
+ if (analisis) analisis.innerHTML = `<p class="small"><strong>Promedio de autoevaluaciones:</strong> ${avg}% (${arr.length} registros)</p>`;
+ let html = '<table><thead><tr><th>Fecha</th><th>Tema</th><th>Puntaje</th><th>Comentarios</th><th>Acciones</th></tr></thead><tbody>';
+ arr.slice().reverse().forEach(a => {
+ html += `<tr data-id="${a.id}"><td>${new Date(a.at).toLocaleString()}</td><td>${a.tema}</td><td>${a.punt}%</td><td>${(a.comentarios || '')}</td><td><a class="btn-link" href="#" data-action="a-delete" data-id="${a.id}">Eliminar</a></td></tr>`;
+ });
+ html += '</tbody></table>';
+ cont.innerHTML = html;
+
+ // attach delete handlers for autoevaluaciones
+ document.querySelectorAll('#listaAutoevaluaciones [data-action="a-delete"]').forEach(a => {
+ a.addEventListener('click', (ev) => {
+ ev.preventDefault();
+ if (!isAuthenticated()) { mostrarAuth('login'); showTopMsg('Inicia sesión para eliminar autoevaluaciones.', 'error', 'msgAuto'); return; }
+ const id = a.getAttribute('data-id');
+ if (!confirm('Eliminar autoevaluación?')) return;
+ const arr = getAutoevaluaciones().filter(x => x.id !== id);
+ saveAutoevaluaciones(arr);
+ showTopMsg('Autoevaluación eliminada.', 'ok', 'msgAuto');
+ renderAutoevaluaciones();
+ updateDashboardCounts();
+ });
+ });
+ }
+
+ // compatibility functions called earlier
+ function renderAnalisis() { renderAutoevaluaciones(); }
+ function renderRendimiento() { /* keep for compatibility: dashboard updated in updateDashboardCounts */ }
+
+ </script>
+</body>
+</html>
